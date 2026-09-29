@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Velunora Perfumes — Fine fragrance store, Lagos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-word" id="loaderWord"></div>
+  <div class="loader-line"></div>
+</div>
+
+<header class="site-header" id="header">
+  <div class="topbar">
+    <span>Complimentary gift wrapping on every order</span>
+    <span class="tb-right">Free delivery in Lagos on orders over ₦150,000</span>
+  </div>
+  <nav class="nav" aria-label="Main">
+    <button class="icon-btn burger" id="burger" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 8h18M3 16h18"/></svg>
+    </button>
+    <a href="#home" class="brand" aria-label="Velunora Perfumes home"><b>VELUNORA</b><small>PERFUMES · LAGOS</small></a>
+    <div class="nav-links" id="navLinks">
+      <a href="#home">Home</a>
+      <a href="#shop">Shop</a>
+      <a href="#notes">Notes</a>
+      <a href="#collection">Collection</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-icons">
+      <button class="icon-btn" id="searchBtn" aria-label="Search fragrances"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+      <button class="icon-btn hide-sm" aria-label="Account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-4 4.2-6 7.5-6s6.1 2 7.5 6"/></svg></button>
+      <button class="icon-btn" id="bagBtn" aria-label="Open bag"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="bag-count" id="bagCount">0</span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+<section class="hero" id="home">
+  <canvas id="dust"></canvas>
+  <div class="hero-inner">
+    <div class="hero-copy" id="heroCopy">
+      <span class="hero-kicker fade" style="--d:.05s" id="heroKicker"></span>
+      <h1 id="heroTitle"></h1>
+      <p class="fade" style="--d:.75s" id="heroText"></p>
+      <div class="hero-ctas fade" style="--d:.9s">
+        <a class="btn btn-gold" href="#featured">Discover the scent</a>
+        <a class="btn" href="#shop">Shop now</a>
+      </div>
+      <div class="hero-price fade" style="--d:1.05s" id="heroPrice"></div>
+    </div>
+    <div class="hero-stage" id="stage">
+      <div class="stage-glow" id="glow"></div>
+      <canvas id="bottle3d" aria-label="Rotating perfume bottle"></canvas>
+      <div class="stage-fallback" id="fallback"></div>
+      <span class="drag-hint">Drag to turn the bottle</span>
+    </div>
+  </div>
+  <button class="hero-arrow prev" id="prev" aria-label="Previous fragrance"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+  <button class="hero-arrow next" id="next" aria-label="Next fragrance"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+  <div class="hero-dots" id="dots"></div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+
+<section class="sec shop" id="shop">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kick">Handpicked for you</span>
+      <h2 class="split-h">Shop Now</h2>
+    </div>
+    <div class="carousel">
+      <div class="track" id="track"></div>
+      <div class="car-ctrl">
+        <button class="car-btn" id="cPrev" aria-label="Scroll left"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+        <div class="car-bar"><i id="cBar"></i></div>
+        <button class="car-btn" id="cNext" aria-label="Scroll right"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec featured" id="featured">
+  <div class="wrap feat-grid">
+    <div class="feat-media reveal" id="featMedia"><div class="tilt" id="featTilt"></div></div>
+    <div class="feat-copy reveal" style="--d:.15s">
+      <span class="kick">Our pick of the month</span>
+      <h2>Ambre Noir</h2>
+      <p>Smoked labdanum and warm amber, softened by Madagascan vanilla. It opens bright, settles close to the skin and stays through the evening.</p>
+      <div class="rating"><span class="stars">★★★★★</span><span>4.9 from 312 reviews</span></div>
+      <div class="feat-price" id="featPrice"></div>
+      <div class="opt-label">Size</div>
+      <div class="sizes" id="sizes">
+        <button class="on" data-size="50ml" data-price="85000">50 ml</button>
+        <button data-size="100ml" data-price="135000">100 ml</button>
+      </div>
+      <div class="buy-row">
+        <div class="qty"><button id="qMinus" aria-label="Decrease quantity">−</button><span id="qVal">1</span><button id="qPlus" aria-label="Increase quantity">+</button></div>
+        <button class="btn btn-gold" id="featAdd">Add to bag</button>
+        <button class="heart-btn" id="featWish" aria-label="Save to wishlist"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z"/></svg></button>
+      </div>
+      <dl class="pyramid">
+        <div><dt>Opens</dt><dd>Bergamot, pink pepper</dd></div>
+        <div><dt>Heart</dt><dd>Labdanum, smoked incense</dd></div>
+        <div><dt>Dries</dt><dd>Amber, vanilla, tonka</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="sec notes" id="notes">
+  <div class="wrap notes-grid">
+    <div class="notes-art reveal" id="notesArt"></div>
+    <div class="reveal" style="--d:.15s">
+      <div class="sec-head" style="text-align:left;margin-bottom:0">
+        <span class="kick">Rose Velours, note by note</span>
+        <h2 class="split-h">Fragrance Notes</h2>
+        <p style="margin-left:0">Every fragrance is built in three layers. Choose a layer to see what you smell first, and what stays with you.</p>
+      </div>
+      <div class="tabs" role="tablist" id="tabs">
+        <button class="on" data-tab="top" role="tab">Top</button>
+        <button data-tab="heart" role="tab">Heart</button>
+        <button data-tab="base" role="tab">Base</button>
+      </div>
+      <div class="note-list" id="noteList"></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="collection">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="kick">Eight fragrances, carefully chosen</span>
+      <h2 class="split-h">Collection</h2>
+    </div>
+    <div class="toolbar">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="q" type="search" placeholder="Search by name or note"></label>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="grid hero-row" id="grid"></div>
+  </div>
+</section>
+
+<section class="sec craft">
+  <div class="wrap craft-grid">
+    <div class="reveal"><b data-count="8">0</b><span>Fragrances on our shelves</span></div>
+    <div class="reveal" style="--d:.12s"><b data-count="100" data-suffix="%">0</b><span>Authentic, sealed bottles</span></div>
+    <div class="reveal" style="--d:.24s"><b data-count="150" data-prefix="₦" data-suffix="k">0</b><span>Orders above this ship free across Lagos</span></div>
+  </div>
+</section>
+</main>
+
+<footer id="contact">
+  <div class="news reveal">
+    <h2>First to know about new arrivals</h2>
+    <p>One letter a month with new arrivals and private sale dates.</p>
+    <form id="newsForm"><input type="email" required placeholder="Your email address" aria-label="Email address"><button>Subscribe</button></form>
+    <div class="ok" id="newsOk" aria-live="polite"></div>
+  </div>
+  <div class="foot-grid">
+    <div><a href="#home" class="brand" style="margin-bottom:1rem"><b>VELUNORA</b><small>PERFUMES · LAGOS</small></a><p>A Lagos perfume store for fine fragrance, carefully chosen and beautifully gift-wrapped.</p></div>
+    <div><h5>Shop</h5><a href="#shop">New arrivals</a><a href="#collection">All fragrances</a><a href="#featured">Gift sets</a></div>
+    <div><h5>About</h5><a href="#notes">Fragrance notes</a><a href="#home">About us</a><a href="#contact">Visit the store</a></div>
+    <div><h5>Contact</h5><p>hello@velunoraperfumes.com</p><p>+234 800 000 0000</p><p>Victoria Island, Lagos</p></div>
+  </div>
+  <div class="copy"><span>© 2026 Velunora Perfumes</span><span>Instagram · TikTok · Pinterest</span></div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Shopping bag">
+  <div class="drawer-head"><h3>Your bag</h3><button class="icon-btn" id="closeDrawer" aria-label="Close bag"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-foot">
+    <div class="sub"><span>Subtotal</span><b id="subtotal">₦0</b></div>
+    <small>Delivery and taxes are calculated at checkout.</small>
+    <button class="btn btn-gold" id="checkout">Checkout</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status"></div>
+
+<button class="chat-btn" id="chatBtn" aria-label="Chat with a fragrance advisor"><svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.4 1.2 4.6 3.1 6.1L4 21l4.3-1.9c1.2.4 2.4.6 3.7.6 5.5 0 10-3.8 10-8.5S17.5 3 12 3Z"/></svg></button>
+<div class="chat" id="chat" aria-live="polite">
+  <div class="chat-head"><b>Fragrance advisor</b><small>Usually replies within a few minutes</small></div>
+  <div class="chat-body" id="chatBody"><div class="msg bot">Welcome to Velunora Perfumes. What can we help you find today?</div></div>
+  <div class="quick" id="quick">
+    <button>Help me choose a scent</button><button>Delivery times</button><button>Gift wrapping</button>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script src="assets/hero-bottle.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
