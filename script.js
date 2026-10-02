@@ -1,481 +1,492 @@
 (() => {
-const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-const fmt = n => '₦' + n.toLocaleString('en-NG');
+const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt = n => '₦' + Number(n).toLocaleString('en-NG');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IMG_BASE = 'https://m0chpdauradhynwn.public.blob.vercel-storage.com/products/';
+const FREE_DELIVERY = 200000, DEAL_MAX = 30000, PAGE = 12;
+const WHATSAPP = '2347074129844';
+const arrowSvg = '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const xSvg = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+const heartSvg = '<svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z"/></svg>';
+const bagSvg = '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+const checkSvg = '<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>';
 
-/* ---------- Data ---------- */
-const products = [
-  {id:'ambre', name:'Ambre Noir', short:'AMBRE', family:'Oriental', notes:'Amber, labdanum, vanilla', price:135000, shape:'square', liquid:'#c8913f', cap:'#141110', bg:'radial-gradient(circle at 50% 60%,#3b2c1f,#15100c)', badge:'Bestseller'},
-  {id:'rose', name:'Rose Velours', short:'ROSE', family:'Floral', notes:'Damask rose, lychee, musk', price:118000, shape:'tall', liquid:'#e2a49c', cap:'#cfae78', bg:'linear-gradient(160deg,#f3e9df,#d8c3b1)', badge:'New'},
-  {id:'oud', name:'Oud Minuit', short:'OUD', family:'Woody', notes:'Oud, saffron, leather', price:165000, shape:'square', liquid:'#6e3a1d', cap:'#1c1a19', bg:'radial-gradient(circle at 50% 60%,#2e241e,#0f0c0a)', badge:'Limited'},
-  {id:'santal', name:'Santal Blanc', short:'SANTAL', family:'Woody', notes:'Sandalwood, fig, cream', price:98000, shape:'round', liquid:'#ecdcb6', cap:'#c9a063', bg:'linear-gradient(160deg,#ece6dd,#cfc5b8)'},
-  {id:'neroli', name:'Néroli Soleil', short:'NÉROLI', family:'Fresh', notes:'Orange blossom, neroli, sea salt', price:76000, shape:'flat', liquid:'#f0d27a', cap:'#f3ede3', bg:'linear-gradient(160deg,#f6ecd6,#e2cfa6)'},
-  {id:'iris', name:'Iris Poudré', short:'IRIS', family:'Floral', notes:'Orris butter, violet, suede', price:112000, shape:'tall', liquid:'#d6c3d2', cap:'#121010', bg:'radial-gradient(circle at 50% 60%,#3d302c,#15110f)'},
-  {id:'vetiver', name:'Vétiver Fumé', short:'VÉTIVER', family:'Woody', notes:'Vetiver, birch smoke, grapefruit', price:104000, shape:'square', liquid:'#a3a36b', cap:'#2a2826', bg:'linear-gradient(160deg,#d9d6cf,#aaa59b)'},
-  {id:'safran', name:'Safran Doré', short:'SAFRAN', family:'Oriental', notes:'Saffron, rose absolute, honey', price:145000, shape:'round', liquid:'#d98b2c', cap:'#141110', bg:'radial-gradient(circle at 50% 60%,#4a3319,#17100a)', badge:'New'}
-];
+/* ---------- Catalogue ---------- */
+const products = (window.VELUNORA_PRODUCTS || []).filter(p => p.price);
 const byId = id => products.find(p => p.id === id);
+const imgOf = p => /^https?:/.test(p.img) ? p.img : IMG_BASE + p.img;
+const FAMILIES = ['Amber','Woody','Oud','Floral','Fruity','Gourmand','Citrus','Aromatic','Fresh','Leather','Oriental'];
+const familiesPresent = FAMILIES.filter(f => products.some(p => p.family === f));
+const brandCounts = products.reduce((m, p) => (m[p.brand] = (m[p.brand] || 0) + 1, m), {});
+const brandsAZ = Object.keys(brandCounts).sort((a, b) => a.localeCompare(b));
+const ARABIAN = ['Lattafa','Arabian Perfume','Khadlaj','Fragrance World','Rayhaan Perfumes','MFP My Perfumes','Hamidi Perfume','Risala perfumes','Armaf','Ard Al Zaafaran','Afnan','Al Haramain','Zimaya Perfumes','Maison Alhambra Perfumes','Grandeur Perfumes','Franck Olivier'];
+const PRICES = [['any','Any price'],['0-30000','Under ₦30,000'],['30000-70000','₦30,000 – ₦70,000'],['70000-200000','₦70,000 – ₦200,000'],['200000-','₦200,000 and above']];
+// image stage: product photo on the warm tone, white backgrounds melt away
+const ph = (p, eager) => `<div class="ph" data-mono="${esc(p.brand.slice(0, 1))}"><img src="${imgOf(p)}" alt="${esc(p.brand + ' ' + p.name)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" onload="this.parentNode.classList.add('loaded')" onerror="this.parentNode.classList.add('loaded','failed')"></div>`;
 
-/* ---------- Product photography ----------
-   Unbranded stock shots (Pexels / Unsplash licences allow free commercial use).
-   Swap these for the store's own product shots, e.g. Supabase storage URLs. */
-const PHOTOS = {
-  ambre:'u:photo-1588405748880-12d1d2a59f75',
-  rose:'p:16266295',
-  oud:'p:4735929',
-  santal:'p:15574229',
-  neroli:'p:264819',
-  iris:'p:4735908',
-  vetiver:'p:13875783',
-  safran:'p:36389336',
-  notesMain:'p:4735908'
-};
-products.forEach(p => p.img = PHOTOS[p.id]);
-function imgUrl(ref, w){
-  const [src, id] = ref.split(/:(.+)/);
-  if (src === 'p') return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
-  if (src === 'u') return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
-  return ref;
+/* LENS-MATCHER-START */
+// Matches words read from a bottle label against the catalogue. Returns [{p, score}] best first.
+const LENS_STOP = new Set('edp edt edc eau de du la le parfum parfums perfume perfumes toilette cologne extrait spray body for women men woman man him her pour homme femme the and with new ml 50ml 75ml 100ml 200ml 250ml natural vaporisateur vapo made paris london dubai collection edition gift set piece inspired original'.split(' '));
+const lensTokens = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').split(' ').filter(w => w.length >= 3 && !LENS_STOP.has(w));
+const lensNear = (a, b) => { if (a === b) return true; if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, edits = 0; while (i < a.length && j < b.length){ if (a[i] === b[j]){ i++; j++; continue; } if (++edits > 1) return false;
+    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } } return edits + (a.length - i) + (b.length - j) <= 1; };
+function lensMatch(text, list){
+  const seen = lensTokens(text); if (!seen.length) return [];
+  const has = w => seen.some(s => lensNear(s, w) || (w.length >= 6 && s.length >= 5 && (s.includes(w) || w.includes(s))));
+  return list.map(p => {
+    const bt = [...new Set(lensTokens(p.brand))], nt = [...new Set(lensTokens(p.name))].filter(w => !bt.includes(w));
+    const bHit = bt.filter(has).length, nHit = nt.filter(has).length;
+    const score = bHit * 2 + nHit * 3 + (nt.length && nHit === nt.length ? 1 : 0);
+    return { p, score, exact: nHit > 0 && nHit === nt.length };
+  }).filter(r => r.score >= 2).sort((a, b) => b.score - a.score || a.p.name.length - b.p.name.length);
 }
-// Responsive <img>; if a photo ever fails to load, the drawn bottle takes its place
-function photo(p, sizes, ref = p.img){
-  return `<img class="photo" src="${imgUrl(ref,800)}" srcset="${[400,800,1200,1600].map(w => `${imgUrl(ref,w)} ${w}w`).join(', ')}" sizes="${sizes}" alt="${p.name} perfume" loading="lazy" decoding="async" data-fb="${p.id}" onerror="window.__photoFail(this)">`;
-}
-window.__photoFail = img => { img.outerHTML = bottleSVG(byId(img.dataset.fb)); };
+/* LENS-MATCHER-END */
 
-/* ---------- Colour helpers ---------- */
-function shade(hex, pct){
-  const n = parseInt(hex.slice(1),16); let r=n>>16, g=(n>>8)&255, b=n&255;
-  const t = pct < 0 ? 0 : 255, f = Math.abs(pct)/100;
-  r = Math.round((t-r)*f+r); g = Math.round((t-g)*f+g); b = Math.round((t-b)*f+b);
-  return '#' + ((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
-}
+/* ---------- Storage ---------- */
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch(e){ return d; } };
+const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+let bag = load('velunora_bag', []).filter(i => byId(i.id));
+let wish = new Set(load('velunora_wish', []).filter(byId));
 
-/* ---------- SVG bottle generator ---------- */
-let gid = 0;
-const SHAPES = {
-  square:{body:{x:48,y:92,w:104,h:140,r:10}, neck:{x:88,y:76,w:24,h:18}, collar:{x:80,y:60,w:40,h:18}, cap:{x:72,y:12,w:56,h:50,r:4}, label:{x:70,y:140,w:60,h:46}},
-  tall:{body:{x:64,y:80,w:72,h:152,r:8}, neck:{x:90,y:66,w:20,h:16}, collar:{x:84,y:52,w:32,h:16}, cap:{x:82,y:4,w:36,h:50,r:15}, label:{x:76,y:130,w:48,h:56}},
-  flat:{body:{x:36,y:112,w:128,h:120,r:28}, neck:{x:88,y:96,w:24,h:18}, collar:{x:82,y:82,w:36,h:16}, cap:{x:74,y:38,w:52,h:46,r:22}, label:{x:70,y:148,w:60,h:40}},
-  round:{circle:{cx:100,cy:168,r:64}, neck:{x:88,y:92,w:24,h:16}, collar:{x:82,y:78,w:36,h:16}, cap:{x:78,y:28,w:44,h:52,r:22}, label:{x:74,y:152,w:52,h:34}}
-};
-function bottleSVG(p, extra=''){
-  const id = 'g' + (gid++), s = SHAPES[p.shape], L = p.liquid, C = p.cap;
-  let body, liquid, hl;
-  if (s.circle){
-    const c = s.circle;
-    body = `<circle cx="${c.cx}" cy="${c.cy}" r="${c.r}" fill="url(#${id}a)" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/>`;
-    liquid = `<clipPath id="${id}k"><circle cx="${c.cx}" cy="${c.cy}" r="${c.r-7}"/></clipPath><g clip-path="url(#${id}k)"><rect x="30" y="${c.cy-c.r+34}" width="140" height="140" fill="url(#${id}l)"/><rect x="30" y="${c.cy-c.r+34}" width="140" height="3" fill="${shade(L,45)}" opacity=".8"/></g>`;
-    hl = `<path d="M62 140 Q56 168 66 196" stroke="#fff" stroke-opacity=".55" stroke-width="6" fill="none" stroke-linecap="round"/>`;
-  } else {
-    const b = s.body, top = b.y + b.h*.2;
-    body = `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${b.r}" fill="url(#${id}a)" stroke="rgba(255,255,255,.45)" stroke-width="1.4"/>`;
-    liquid = `<rect x="${b.x+7}" y="${top}" width="${b.w-14}" height="${b.y+b.h-7-top}" rx="${Math.max(b.r-4,3)}" fill="url(#${id}l)"/><rect x="${b.x+7}" y="${top}" width="${b.w-14}" height="3" fill="${shade(L,45)}" opacity=".8"/>`;
-    hl = `<rect x="${b.x+8}" y="${b.y+10}" width="7" height="${b.h-24}" rx="3.5" fill="#fff" opacity=".45"/><rect x="${b.x+b.w-13}" y="${b.y+14}" width="3" height="${b.h-34}" rx="1.5" fill="#fff" opacity=".3"/>`;
-  }
-  const n = s.neck, co = s.collar, cp = s.cap, lb = s.label;
-  const ridges = [1,2,3,4].map(i => `<line x1="${co.x}" x2="${co.x+co.w}" y1="${co.y+i*co.h/5}" y2="${co.y+i*co.h/5}" stroke="#6b5030" stroke-opacity=".45" stroke-width=".8"/>`).join('');
-  return `<svg class="bottle" viewBox="0 0 200 250" ${extra} aria-hidden="true"><defs>
-<linearGradient id="${id}a" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".2" stop-color="#fff" stop-opacity=".12"/><stop offset=".75" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity=".32"/></linearGradient>
-<linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(L,28)}"/><stop offset=".55" stop-color="${L}"/><stop offset="1" stop-color="${shade(L,-38)}"/></linearGradient>
-<linearGradient id="${id}m" x1="0" x2="1"><stop offset="0" stop-color="#7d5f33"/><stop offset=".35" stop-color="#f4dfb0"/><stop offset=".62" stop-color="#b8935a"/><stop offset="1" stop-color="#5f4527"/></linearGradient>
-<linearGradient id="${id}c" x1="0" x2="1"><stop offset="0" stop-color="${shade(C,-25)}"/><stop offset=".28" stop-color="${shade(C,38)}"/><stop offset=".55" stop-color="${C}"/><stop offset="1" stop-color="${shade(C,-35)}"/></linearGradient>
-<radialGradient id="${id}s"><stop offset="0" stop-color="#000" stop-opacity=".4"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
-</defs>
-<ellipse cx="100" cy="240" rx="74" ry="8" fill="url(#${id}s)"/>
-${liquid}${body}${hl}
-<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="url(#${id}a)" stroke="rgba(255,255,255,.4)"/>
-<rect x="${co.x}" y="${co.y}" width="${co.w}" height="${co.h}" rx="1.5" fill="url(#${id}m)"/>${ridges}
-<rect x="${cp.x}" y="${cp.y}" width="${cp.w}" height="${cp.h}" rx="${cp.r}" fill="url(#${id}c)"/>
-<rect x="${cp.x+5}" y="${cp.y+4}" width="4" height="${cp.h-10}" rx="2" fill="#fff" opacity=".35"/>
-<rect x="${lb.x}" y="${lb.y}" width="${lb.w}" height="${lb.h}" fill="#0f0c0a" stroke="#cfae78" stroke-width=".9"/>
-<rect x="${lb.x+3}" y="${lb.y+3}" width="${lb.w-6}" height="${lb.h-6}" fill="none" stroke="#cfae78" stroke-width=".4"/>
-<text x="100" y="${lb.y+lb.h*.48}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-size="7" letter-spacing="1.4" fill="#e6cc9c">${p.short}</text>
-<text x="100" y="${lb.y+lb.h*.72}" text-anchor="middle" font-family="Jost, sans-serif" font-size="3.4" letter-spacing="1.2" fill="#cfae78">EAU DE PARFUM</text>
-</svg>`;
-}
-
-/* ---------- Loader ---------- */
-$('#loaderWord').innerHTML = 'VELUNORA'.split('').map((c,i) => `<span style="animation-delay:${.1+i*.08}s">${c}</span>`).join('');
-let started = false;
-function startSite(){
-  if (started) return; started = true;
-  $('#loader').classList.add('done');
-  setTimeout(() => setSlide(0, true), reduce ? 0 : 450);
-}
-window.addEventListener('load', () => setTimeout(startSite, reduce ? 0 : 1300));
-setTimeout(startSite, 3500);
-
-/* ---------- Header / menu ---------- */
+/* ---------- Header ---------- */
 const header = $('#header');
-addEventListener('scroll', () => header.classList.toggle('scrolled', scrollY > 30), {passive:true});
-$('#burger').addEventListener('click', () => {
-  const open = header.classList.toggle('menu-open');
-  $('#burger').setAttribute('aria-expanded', open);
-  document.body.style.overflow = open ? 'hidden' : '';
-});
-$$('#navLinks a').forEach(a => a.addEventListener('click', () => { header.classList.remove('menu-open'); document.body.style.overflow=''; }));
-$('#searchBtn').addEventListener('click', () => { $('#collection').scrollIntoView({behavior:'smooth'}); setTimeout(() => $('#q').focus({preventScroll:true}), 700); });
+addEventListener('scroll', () => header.classList.toggle('scrolled', scrollY > 8), {passive:true});
 
-/* ---------- Hero slides ---------- */
-const slides = [
-  {kicker:'Ambre Noir, extrait de parfum', title:'The art of / *quiet* luxury', text:'Smoked amber and Madagascan vanilla. A warm, long-lasting extrait and one of our most-loved picks.', price:85000, liquid:'#c8913f', glow:'rgba(207,160,90,.32)'},
-  {kicker:'Rose Velours, limited edition', title:'Petals *wrapped* / in velvet', text:'Damask rose picked at dawn, softened with lychee and a clean white musk that lingers on fabric.', price:118000, liquid:'#e09a93', glow:'rgba(214,140,134,.3)'},
-  {kicker:'Oud Minuit, extrait', title:'Midnight / *oud* & saffron', text:'Aged agarwood, Iranian saffron and soft leather. The richest scent on our shelves, made for evenings out.', price:165000, liquid:'#7a3d1c', glow:'rgba(160,90,45,.34)'}
-];
-let cur = 0, autoTimer;
-const copy = $('#heroCopy');
-$('#dots').innerHTML = slides.map((_,i) => `<button aria-label="Show fragrance ${i+1}"></button>`).join('');
-function buildTitle(t){
-  let i = 0;
-  return t.split(' ').map(w => {
-    if (w === '/') return '<br>';
-    const italic = w.startsWith('*');
-    const clean = w.replace(/\*/g,'');
-    const inner = italic ? `<em>${clean}</em>` : clean;
-    return `<span class="w"><span style="--d:${(.18 + (i++)*.09).toFixed(2)}s">${inner}</span></span>`;
-  }).join(' ');
-}
-function setSlide(i, first){
-  cur = (i + slides.length) % slides.length;
-  const s = slides[cur];
-  copy.classList.remove('show'); if (!first) copy.classList.add('leave');
-  setTimeout(() => {
-    $('#heroKicker').textContent = s.kicker;
-    $('#heroTitle').innerHTML = buildTitle(s.title);
-    $('#heroText').textContent = s.text;
-    $('#heroPrice').innerHTML = `From <b>${fmt(s.price)}</b>`;
-    copy.classList.remove('leave'); void copy.offsetWidth; copy.classList.add('show');
-  }, first ? 0 : 420);
-  $$('#dots button').forEach((d,k) => d.classList.toggle('on', k === cur));
-  $('#glow').style.setProperty('--glow', s.glow);
-  bottle.setLiquid(s.liquid); if (!first) bottle.boost();
-  clearInterval(autoTimer); autoTimer = setInterval(() => setSlide(cur+1), 8000);
-}
-$('#prev').onclick = () => setSlide(cur-1);
-$('#next').onclick = () => setSlide(cur+1);
-$$('#dots button').forEach((d,k) => d.onclick = () => k !== cur && setSlide(k));
-
-/* ---------- Hero bottle: a real photo turned into 3D (three.js) ----------
-   The photo is cut out and given depth (assets/hero-bottle.js), then drawn on a finely
-   subdivided surface pushed forward by that depth, so it turns with real parallax.
-   To use a full 3D model instead, set BOTTLE_MODEL to a .glb URL. */
-const BOTTLE_MODEL = '';
-const bottle = (() => {
-  const canvas = $('#bottle3d'), stage = $('#stage');
-  let boost = 0, glowColor = '#cf9a52';
-  const api = { setLiquid(hex){ glowColor = hex; }, boost(){ boost = 1; } };
-  const fallback = () => { document.body.classList.add('no-webgl'); canvas.style.display = 'none'; $('#fallback').innerHTML = bottleSVG(products[0]); };
-  if (!document.createElement('canvas').getContext('webgl2') || (!BOTTLE_MODEL && !window.HERO_BOTTLE)){ fallback(); return api; }
-
-  (async () => {
-    const THREE = await import('three');
-    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, 1, .1, 100);
-    camera.position.set(0, .35, 8); camera.lookAt(0, .1, 0);
-    const group = new THREE.Group(); scene.add(group);
-    let uniforms = null;
-
-    if (BOTTLE_MODEL){
-      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
-      const { RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js');
-      scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(renderer), .04).texture;
-      const model = (await new GLTFLoader().loadAsync(BOTTLE_MODEL)).scene, box = new THREE.Box3().setFromObject(model);
-      model.scale.setScalar(2.9 / box.getSize(new THREE.Vector3()).y); box.setFromObject(model); model.position.sub(box.getCenter(new THREE.Vector3()));
-      group.add(model);
-    } else {
-      const load = src => new Promise((res, rej) => new THREE.TextureLoader().load(src, res, undefined, rej));
-      const [photo, map] = await Promise.all([load(HERO_BOTTLE.photo), load(HERO_BOTTLE.map)]);
-      photo.colorSpace = THREE.SRGBColorSpace; photo.anisotropy = 8;
-      const H = 2.7, W = H * HERO_BOTTLE.aspect;
-      uniforms = { uPhoto:{value:photo}, uMap:{value:map}, uDepth:{value:.62}, uSheen:{value:0}, uReflect:{value:0} };
-      const vert = `
-        uniform sampler2D uMap; uniform float uDepth; varying vec2 vUv;
-        void main(){
-          vUv = uv; vec4 m = texture2D(uMap, uv);
-          vec3 p = position; p.z += m.r * smoothstep(.15, .9, m.g) * uDepth;   // push the bottle forward by its depth
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.);
-        }`;
-      const frag = `
-        uniform sampler2D uPhoto, uMap; uniform float uSheen, uReflect; varying vec2 vUv;
-        void main(){
-          vec3 c = texture2D(uPhoto, vUv).rgb; float a = texture2D(uMap, vUv).g;
-          // near-white, unsaturated pixels are the studio backdrop seen through clear glass: let the page show through
-          float lum = dot(c, vec3(.299, .587, .114)), sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
-          float clear = smoothstep(.72, .93, lum) * (1. - smoothstep(.04, .2, sat));
-          c = mix(c, c * vec3(.8, .76, .72), clear * .55);
-          float alpha = a * mix(1., .42, clear);
-          // soft band of light that slides across the glass as the bottle turns
-          float band = exp(-pow((vUv.x + vUv.y * .35 - uSheen) * 7., 2.));
-          c += band * .22 * a;
-          if (uReflect > .5){ alpha *= .16 * (1. - smoothstep(0., .3, vUv.y)); }   // floor reflection fades away from the bottle
-          if (alpha < .01) discard;
-          gl_FragColor = vec4(c, alpha);
-          #include <colorspace_fragment>
-        }`;
-      const geo = new THREE.PlaneGeometry(W, H, 160, 290);
-      const mat = new THREE.ShaderMaterial({uniforms, vertexShader:vert, fragmentShader:frag, transparent:true});
-      const bottleMesh = new THREE.Mesh(geo, mat); group.add(bottleMesh);
-      const refl = new THREE.Mesh(geo, mat.clone()); refl.material.uniforms = {...uniforms, uReflect:{value:1}}; refl.material.side = THREE.DoubleSide;
-      refl.scale.y = -1; refl.position.y = -H; group.add(refl);
-      group.userData.bottomY = -H / 2;
-    }
-
-    // warm pool of light under the bottle, tinted per slide
-    const gc = document.createElement('canvas'); gc.width = gc.height = 256; const gx = gc.getContext('2d');
-    const rg = gx.createRadialGradient(128,128,0,128,128,128); rg.addColorStop(0,'rgba(255,255,255,.6)'); rg.addColorStop(1,'rgba(255,255,255,0)');
-    gx.fillStyle = rg; gx.fillRect(0,0,256,256);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(gc), color:new THREE.Color(glowColor), transparent:true, opacity:.45, depthWrite:false}));
-    floor.rotation.x = -Math.PI/2; scene.add(floor);
-    const baseY = .25;
-
-    function size(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w/h;
-      camera.position.z = w/h < .8 ? 9.8 : 8; camera.updateProjectionMatrix(); }
-    new ResizeObserver(size).observe(stage); size();
-
-    // swing: gentle automatic sway, drag to turn (within the range a single photo can show), springs back
-    const LIMIT = .5;
-    let drag = false, lastX = 0, dragYaw = 0, tiltX = 0, tiltY = 0;
-    stage.addEventListener('pointerdown', e => { drag = true; lastX = e.clientX; });
-    addEventListener('pointerup', () => drag = false);
-    addEventListener('pointercancel', () => drag = false);
-    addEventListener('pointermove', e => {
-      if (drag){ dragYaw = Math.max(-LIMIT, Math.min(LIMIT, dragYaw + (e.clientX - lastX) * .006)); lastX = e.clientX; }
-      tiltX = (e.clientY / innerHeight - .5) * .12; tiltY = (e.clientX / innerWidth - .5) * .5;
-    });
-
-    let visible = true;
-    new IntersectionObserver(([en]) => visible = en.isIntersecting).observe(stage);
-    const glowTarget = new THREE.Color(), clock = new THREE.Clock(); let t = 0, yaw = 0;
-    renderer.setAnimationLoop(() => {
-      const dt = Math.min(clock.getDelta(), .05);
-      if (!visible) return;
-      t += dt; boost *= Math.pow(.25, dt);
-      if (!drag) dragYaw *= Math.pow(.15, dt);
-      const sway = reduce ? 0 : Math.sin(t * .55) * .32 + Math.sin(t * 2.2) * boost * .25;
-      const targetYaw = Math.max(-LIMIT, Math.min(LIMIT, sway + dragYaw + tiltY * .3));
-      yaw += (targetYaw - yaw) * .08;
-      group.rotation.y = yaw;
-      group.rotation.x += (tiltX - group.rotation.x) * .05;
-      const float = reduce ? 0 : Math.sin(t * .8) * .05;
-      group.position.y = baseY + float;
-      floor.position.y = baseY - 1.35;
-      if (uniforms) uniforms.uSheen.value = .55 - yaw * 1.4;
-      glowTarget.set(glowColor); floor.material.color.lerp(glowTarget, .04);
-      floor.material.opacity = .45 - float * 1.5;
-      renderer.render(scene, camera);
-    });
-  })().catch(err => { console.warn('3D bottle unavailable, showing illustration instead:', err); fallback(); });
-  return api;
-})();
-
-/* ---------- Gold dust ---------- */
-(() => {
-  const c = $('#dust'), x = c.getContext('2d'); let W, H, parts = [];
-  function size(){ const r = Math.min(devicePixelRatio,2); W = c.offsetWidth; H = c.offsetHeight; c.width = W*r; c.height = H*r; x.setTransform(r,0,0,r,0,0);
-    parts = Array.from({length: Math.round(W*H/16000)}, () => ({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.6+.3, s:Math.random()*.25+.05, p:Math.random()*6.28})); }
-  addEventListener('resize', size); size();
-  (function draw(){
-    requestAnimationFrame(draw);
-    if (scrollY > innerHeight) return;
-    x.clearRect(0,0,W,H);
-    for (const p of parts){
-      if (!reduce){ p.y -= p.s; p.x += Math.sin(p.p += .01) * .15; }
-      if (p.y < -5){ p.y = H + 5; p.x = Math.random()*W; }
-      const a = .25 + Math.sin(p.p*2) * .25 + .25;
-      x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.283); x.fillStyle = `rgba(156,116,70,${a * .7})`; x.fill();
-    }
-  })();
-})();
-
-/* ---------- Marquee ---------- */
-const mWords = ['Oud','Damask rose','Amber','Vetiver','Saffron','Orris','Sandalwood','Neroli'];
-$('#marquee').innerHTML = [...mWords, ...mWords].map(w => `<span>${w}</span>`).join('');
-
-/* ---------- Cards ---------- */
-const heart = '<svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z"/></svg>';
-const wished = new Set();
-function card(p, i){
-  return `<article class="card" style="--d:${(i*.07).toFixed(2)}s">
-    <div class="card-media" style="background:var(--walnut)">
-      ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
-      <button class="wish ${wished.has(p.id)?'on':''}" data-wish="${p.id}" aria-label="Save ${p.name}">${heart}</button>
-      ${photo(p, '(max-width:520px) 50vw, (max-width:1000px) 50vw, 330px')}
+/* ---------- Product card ---------- */
+function card(p, i = 0){
+  const badge = p.soldOut ? '<span class="badge sold">Sold out</span>' : p.tags.includes('bestseller') ? '<span class="badge">Best seller</span>' : p.tags.includes('trending') ? '<span class="badge">Trending</span>' : '';
+  return `<article class="card" style="--d:${Math.min(i, 11) * 0.04}s">
+    <div class="card-media" data-qv="${esc(p.id)}">${ph(p)}${badge}
+      <button class="wish ${wish.has(p.id) ? 'on' : ''}" data-wish="${esc(p.id)}" aria-label="Save ${esc(p.name)}" aria-pressed="${wish.has(p.id)}">${heartSvg}</button>
+      <div class="card-actions"><button data-qv="${esc(p.id)}">Quick view</button><button data-add="${esc(p.id)}" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'Sold out' : 'Add to bag'}</button></div>
     </div>
     <div class="card-body">
-      <span class="fam">${p.family}</span>
-      <h3>${p.name}</h3>
-      <p class="notes-line">${p.notes}</p>
-      <div class="card-foot"><span class="price">${fmt(p.price)}</span><button class="btn btn-sm" data-add="${p.id}">Add to bag</button></div>
+      <span class="card-brand">${esc(p.brand)}</span>
+      <h3 class="card-name" data-qv="${esc(p.id)}" title="${esc(p.name)}">${esc(p.name)}</h3>
+      <span class="card-meta">${esc(p.size)}${p.family ? ' · ' + esc(p.family) : ''}</span>
+      <div class="card-row"><span class="card-price">${p.soldOut ? '<s>' + fmt(p.price) + '</s>' : fmt(p.price)}</span>
+        <button class="card-add-sm" data-add="${esc(p.id)}" ${p.soldOut ? 'disabled' : ''} aria-label="${p.soldOut ? 'Sold out' : 'Add ' + esc(p.name) + ' to bag'}">${bagSvg}</button></div>
     </div></article>`;
 }
-const track = $('#track');
-track.innerHTML = products.map(card).join('');
-// reveal the carousel as a whole: cards off to the right would otherwise pop in one by one while scrolling
-track.closest('.carousel').classList.add('reveal');
-// move exactly one product per arrow press, smoothly, landing on a card edge
-const cards = () => [...track.children];
-const cardX = c => c.offsetLeft - track.firstElementChild.offsetLeft;
-const currentCard = () => { let best = 0, d = Infinity; cards().forEach((c, i) => { const dd = Math.abs(cardX(c) - track.scrollLeft); if (dd < d){ d = dd; best = i; } }); return best; };
-// own easing instead of native smooth scroll, which fights scroll-snap in some browsers
-let slideAnim = 0;
-const goCard = dir => {
-  const cs = cards(), i = Math.max(0, Math.min(cs.length - 1, currentCard() + dir));
-  const from = track.scrollLeft, to = Math.min(cardX(cs[i]), track.scrollWidth - track.clientWidth);
-  cancelAnimationFrame(slideAnim);
-  if (reduce || Math.abs(to - from) < 1){ track.scrollLeft = to; return; }
-  track.style.scrollSnapType = 'none'; track.style.scrollBehavior = 'auto';
-  const t0 = performance.now(), dur = 550, ease = k => k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k + 2, 3) / 2;
-  const step = now => { const k = Math.min((now - t0) / dur, 1); track.scrollLeft = from + (to - from) * ease(k);
-    if (k < 1) slideAnim = requestAnimationFrame(step); else { track.style.scrollSnapType = ''; track.style.scrollBehavior = ''; } };
-  slideAnim = requestAnimationFrame(step);
-};
-track.addEventListener('pointerdown', () => { cancelAnimationFrame(slideAnim); track.style.scrollSnapType = ''; track.style.scrollBehavior = ''; }, {passive:true});
-$('#cPrev').onclick = () => goCard(-1);
-$('#cNext').onclick = () => goCard(1);
-function bar(){ const max = track.scrollWidth - track.clientWidth; const vis = track.clientWidth / track.scrollWidth;
-  const f = max > 0 ? track.scrollLeft / max : 1; $('#cBar').style.transform = `scaleX(${vis + (1-vis)*f})`;
-  $('#cPrev').classList.toggle('off', track.scrollLeft < 4); $('#cNext').classList.toggle('off', track.scrollLeft > max - 4); }
-track.addEventListener('scroll', bar, {passive:true}); addEventListener('resize', bar); bar();
 
-/* ---------- Collection ---------- */
-const fams = ['All', ...new Set(products.map(p => p.family))];
-let fam = 'All';
-$('#chips').innerHTML = fams.map(f => `<button class="${f==='All'?'on':''}" data-fam="${f}">${f}</button>`).join('');
-function renderGrid(){
-  const q = $('#q').value.trim().toLowerCase();
-  const list = products.filter(p => (fam==='All' || p.family===fam) && (!q || (p.name+' '+p.notes+' '+p.family).toLowerCase().includes(q)));
-  const g = $('#grid');
-  g.classList.toggle('hero-row', fam==='All' && !q);
-  g.innerHTML = list.length ? list.map(card).join('') :
-    `<div class="empty"><b>No fragrances match “${q.replace(/[<>&"]/g,'')}”</b>Try a note such as rose, oud or amber, or clear the search.</div>`;
-}
-$('#chips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
-  fam = b.dataset.fam; $$('#chips button').forEach(x => x.classList.toggle('on', x===b)); renderGrid(); });
-$('#q').addEventListener('input', renderGrid);
-renderGrid();
+/* ---------- Collections (used by the category rail, nav and filter chips) ---------- */
+const EDITS = [
+  { key:'arabian', title:'Arabian & oud', test:p => ARABIAN.includes(p.brand) || p.family === 'Oud' },
+  { key:'evening', title:'Evening scents', test:p => ['Amber','Gourmand','Oriental'].includes(p.family) && /Parfum|Extrait/.test(p.concentration || '') },
+  { key:'body', title:'Body sprays', test:p => /body spray|deodorant|anti-?pers|roll on/i.test(p.name) },
+  { key:'value', title:'Under ₦30,000', test:p => p.price < DEAL_MAX }
+];
 
-/* ---------- Featured ---------- */
-$('#featTilt').innerHTML = photo(products[0], '(max-width:900px) 60vw, 30vw');
-let featSize = '50ml', featPrice = 85000, qty = 1;
-const updFeat = () => { $('#featPrice').innerHTML = `${fmt(featPrice * qty)}<small>${featSize.replace('ml',' ml')}${qty>1?' × '+qty:''}</small>`; $('#qVal').textContent = qty; };
-updFeat();
-$('#sizes').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
-  $$('#sizes button').forEach(x => x.classList.toggle('on', x===b)); featSize = b.dataset.size; featPrice = +b.dataset.price; updFeat(); });
-$('#qMinus').onclick = () => { qty = Math.max(1, qty-1); updFeat(); };
-$('#qPlus').onclick = () => { qty = Math.min(9, qty+1); updFeat(); };
-$('#featAdd').onclick = () => addToCart('ambre', featSize, featPrice, qty);
-$('#featWish').onclick = e => { e.currentTarget.classList.toggle('on'); toast(e.currentTarget.classList.contains('on') ? 'Saved to your wishlist' : 'Removed from your wishlist'); };
-const fm = $('#featMedia');
-fm.addEventListener('pointermove', e => { const r = fm.getBoundingClientRect(); const x = (e.clientX-r.left)/r.width-.5, y = (e.clientY-r.top)/r.height-.5;
-  $('#featTilt').style.transform = `rotateY(${x*24}deg) rotateX(${-y*18}deg) translateZ(20px)`; });
-fm.addEventListener('pointerleave', () => $('#featTilt').style.transform = '');
-
-/* ---------- Notes art: framed photo with art-deco gold details ---------- */
+/* ---------- Category rail ---------- */
 (() => {
-  const rays = Array.from({length:19}, (_,i) => { const a = Math.PI * (i/18), r = 260;
-    return `<line x1="200" y1="250" x2="${(200 - Math.cos(a)*r).toFixed(1)}" y2="${(250 - Math.sin(a)*r).toFixed(1)}"/>`; }).join('');
-  const call = (layer, name, note) => `<button class="nf-call ${layer}" data-layer="${layer}" type="button"><b>${name}</b><span>${note}</span></button>`;
-  $('#notesArt').innerHTML = `<div class="nf">
-    <svg class="nf-rays" viewBox="0 0 400 440" aria-hidden="true">${rays}</svg>
-    <div class="nf-arch-line" aria-hidden="true"></div>
-    <div class="nf-arch"><img src="${imgUrl(PHOTOS.notesMain,900)}" srcset="${imgUrl(PHOTOS.notesMain,900)} 1x, ${imgUrl(PHOTOS.notesMain,1600)} 2x" alt="Rose Velours in a clear glass bottle with a lacquered cap" loading="lazy" decoding="async"></div>
-    <div class="nf-ring" aria-hidden="true">
-      <svg viewBox="0 0 100 100"><defs><path id="nfRing" d="M50 50m-38 0a38 38 0 1 1 76 0a38 38 0 1 1-76 0"/></defs><text><textPath href="#nfRing">Rose Velours · Extrait de parfum · </textPath></text></svg>
-      <span>V</span>
-    </div>
-    ${call('top','Top','Bergamot')}${call('heart','Heart','Damask rose')}${call('base','Base','White musk')}
-  </div>`;
-  $$('.nf-call').forEach(c => c.addEventListener('click', () => $(`#tabs [data-tab="${c.dataset.layer}"]`).click()));
+  const pick = key => products.find(p => p.id.startsWith(key));
+  const items = [
+    ['all', 'All', products.length, pick('tom-ford-lost-cherry')],
+    ['gender:Women', 'Women', products.filter(p => matchGender(p, 'Women')).length, pick('rave-now-women')],
+    ['gender:Men', 'Men', products.filter(p => matchGender(p, 'Men')).length, pick('rayhaan-pacific')],
+    ['gender:Unisex', 'Unisex', products.filter(p => p.gender === 'Unisex').length, pick('armaf-ombre')],
+    ['edit:arabian', 'Arabian & oud', products.filter(EDITS[0].test).length, pick('lattafa-ishq')],
+    ['edit:evening', 'Evening', products.filter(EDITS[1].test).length, pick('khadlaj-le-prestige')],
+    ['edit:body', 'Body sprays', products.filter(EDITS[2].test).length, pick('armaf-legesi')],
+    ['deals', 'Under ₦30k', products.filter(EDITS[3].test).length, pick('breed-hello-sugar')]
+  ];
+  $('#catRail').innerHTML = items.map(([f, label, n, p], i) => `<a class="rail-item" href="#shop" data-filter="${f}" style="--d:${i * .04}s">
+    <span class="rail-img">${p ? ph(p, i < 4) : ''}</span><b>${esc(label)}</b><small>${n}</small></a>`).join('');
 })();
-const notesData = {
-  top:[['Bergamot','First 15 minutes','Bright, slightly bitter citrus that lifts the opening.',.8],['Lychee','First 30 minutes','Juicy and sweet, it makes the rose feel fresh.',.65],['Pink pepper','First hour','A dry, sparkling spice that keeps things light.',.5]],
-  heart:[['Damask rose','Hours 1 to 4','Hand-picked Bulgarian rose, rich and velvety.',.95],['Jasmine sambac','Hours 1 to 3','Adds warmth and a creamy floral depth.',.6],['Orris','Hours 2 to 5','Powdery iris root, soft like face powder.',.55]],
-  base:[['White musk','All day','Clean and skin-like; this is what lingers on fabric.',.9],['Amber','Hours 4 to 10','Warm, resinous glow under the florals.',.75],['Cashmere wood','Hours 5 to 12','Soft, dry wood that rounds out the finish.',.6]]
-};
-function renderNotes(k){
-  const el = $('#noteList'); el.classList.remove('show');
-  $$('.nf-call').forEach(c => c.classList.toggle('on', c.dataset.layer === k));
-  setTimeout(() => {
-    el.innerHTML = notesData[k].map(([n,when,d,v],i) => `<div class="note" style="--i:${i}"><div class="note-top"><h4>${n}</h4><span>${when}</span></div><p>${d}</p><div class="meter"><i style="--v:${v}"></i></div></div>`).join('');
-    void el.offsetWidth; el.classList.add('show');
-  }, 250);
-}
-$('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
-  $$('#tabs button').forEach(x => x.classList.toggle('on', x===b)); renderNotes(b.dataset.tab); });
 
-/* ---------- Cart ---------- */
-let cart = [];
-try { cart = JSON.parse(localStorage.getItem('velour_cart') || '[]'); } catch(e){ cart = []; }
-const save = () => { try { localStorage.setItem('velour_cart', JSON.stringify(cart)); } catch(e){} };
-function addToCart(id, size='100ml', price, q=1){
-  const p = byId(id); price = price || p.price;
-  const key = id + '|' + size, ex = cart.find(c => c.key === key);
-  ex ? ex.qty += q : cart.push({key, id, size, price, qty:q});
-  save(); renderCart();
-  const bc = $('#bagCount'); bc.classList.remove('bump'); void bc.offsetWidth; bc.classList.add('bump');
+/* ---------- Best sellers carousel: one card per arrow press ---------- */
+$('#best').innerHTML = [...products.filter(p => p.tags.includes('bestseller')), ...products.filter(p => p.tags.includes('trending') && !p.tags.includes('bestseller'))].slice(0, 12).map(card).join('');
+function setupCarousel(track){
+  const btns = $$(`[data-car="${track.id}"]`);
+  const x = c => c.offsetLeft - track.firstElementChild.offsetLeft;
+  const cur = () => { let b = 0, d = Infinity; [...track.children].forEach((c, i) => { const dd = Math.abs(x(c) - track.scrollLeft); if (dd < d){ d = dd; b = i; } }); return b; };
+  let anim = 0;
+  const go = dir => { const cs = [...track.children], i = Math.max(0, Math.min(cs.length - 1, cur() + dir));
+    const from = track.scrollLeft, to = Math.min(x(cs[i]), track.scrollWidth - track.clientWidth);
+    cancelAnimationFrame(anim); if (reduce || Math.abs(to - from) < 1){ track.scrollLeft = to; return; }
+    track.style.scrollSnapType = 'none'; const t0 = performance.now(), dur = 480, ease = k => 1 - Math.pow(1 - k, 3);
+    const step = now => { const k = Math.min((now - t0) / dur, 1); track.scrollLeft = from + (to - from) * ease(k);
+      if (k < 1) anim = requestAnimationFrame(step); else track.style.scrollSnapType = ''; };
+    anim = requestAnimationFrame(step); };
+  btns.forEach(b => b.addEventListener('click', () => go(+b.dataset.dir)));
+  const state = () => { const max = track.scrollWidth - track.clientWidth;
+    btns.forEach(b => b.classList.toggle('off', +b.dataset.dir < 0 ? track.scrollLeft < 4 : track.scrollLeft > max - 4)); };
+  track.addEventListener('scroll', state, {passive:true}); addEventListener('resize', state); state();
+  track.addEventListener('pointerdown', () => { cancelAnimationFrame(anim); track.style.scrollSnapType = ''; }, {passive:true});
+}
+setupCarousel($('#best'));
+
+/* ---------- Brand index ---------- */
+(() => { const groups = {};
+  brandsAZ.forEach(b => { const l = /^[a-z]/i.test(b) ? b[0].toUpperCase() : '#'; (groups[l] = groups[l] || []).push(b); });
+  $('#brandIndex').innerHTML = Object.entries(groups).map(([l, bs]) => `<div class="bi-group"><h3>${l}</h3>${bs.map(b => `<button data-filter="brand:${esc(b)}">${esc(b)}<small>${brandCounts[b]}</small></button>`).join('')}</div>`).join('');
+  $('#megaBrands').innerHTML = brandsAZ.map(b => `<a href="#shop" data-filter="brand:${esc(b)}">${esc(b)}<small>${brandCounts[b]}</small></a>`).join('');
+})();
+
+/* ---------- Shop: filters ---------- */
+const F = { gender:'all', fams:new Set(), brands:new Set(), price:'any', stock:false, q:'', edit:'', sort:'featured' };
+let shown = PAGE;
+function matchGender(p, g){ return g === 'all' || p.gender === g || (g !== 'Unisex' && p.gender === 'Unisex'); }
+const searchText = p => (p.brand + ' ' + p.name + ' ' + p.family + ' ' + p.gender + ' ' + p.notes.join(' ')).toLowerCase();
+// every typed word must match the start of a word, so "oud" finds Oud but not Proud
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const matches = (p, q) => q.toLowerCase().split(/\s+/).filter(Boolean).every(w => new RegExp('(^|[^a-z0-9])' + reEsc(w)).test(searchText(p)));
+function inPrice(p, band){ if (band === 'any') return true; const [lo, hi] = band.split('-').map(v => v === '' ? Infinity : +v); return p.price >= lo && p.price < hi; }
+function filtered(){
+  const ed = EDITS.find(e => e.key === F.edit);
+  let list = products.filter(p => matchGender(p, F.gender) && (!F.fams.size || F.fams.has(p.family)) && (!F.brands.size || F.brands.has(p.brand))
+    && inPrice(p, F.price) && (!F.stock || !p.soldOut) && (!F.q || matches(p, F.q)) && (!ed || ed.test(p)));
+  const s = { low:(a, b) => a.price - b.price, high:(a, b) => b.price - a.price, az:(a, b) => a.name.localeCompare(b.name) }[F.sort];
+  return s ? [...list].sort(s) : [...list].sort((a, b) => a.soldOut - b.soldOut);
+}
+// filter controls
+$('#fGender').innerHTML = [['all','All'],['Women','Women'],['Men','Men'],['Unisex','Unisex']].map(([v, l]) => `<button data-gender="${v}">${l}</button>`).join('');
+$('#fFamily').innerHTML = familiesPresent.map(f => `<label class="check"><input type="checkbox" value="${f}" data-fam><i></i><span>${f}</span><small>${products.filter(p => p.family === f).length}</small></label>`).join('');
+$('#fPrice').innerHTML = PRICES.map(([v, l]) => `<label class="check"><input type="radio" name="price" value="${v}" data-price ${v === 'any' ? 'checked' : ''}><i></i><span>${l}</span></label>`).join('');
+$('#fBrand').innerHTML = brandsAZ.map(b => `<label class="check" data-bname="${esc(b.toLowerCase())}"><input type="checkbox" value="${esc(b)}" data-brand><i></i><span>${esc(b)}</span><small>${brandCounts[b]}</small></label>`).join('');
+$('#fBrand').insertAdjacentHTML('afterend', `<button class="show-all" id="brandAll" type="button">Show all ${brandsAZ.length} brands</button>`);
+$('#brandAll').addEventListener('click', e => { const l = $('#fBrand'), on = l.classList.toggle('all'); e.target.textContent = on ? 'Show fewer' : `Show all ${brandsAZ.length} brands`; });
+// typing shows every matching brand, not just the first eight
+$('#brandFind').addEventListener('input', e => { const q = e.target.value.trim().toLowerCase();
+  $('#fBrand .check').forEach(l => { const m = !q || l.dataset.bname.includes(q); l.hidden = !m; l.classList.toggle('match', !!q && m); });
+  $('#brandAll').hidden = !!q; });
+$('#filters').addEventListener('change', e => {
+  const t = e.target; shown = PAGE;
+  if (t.matches('[data-fam]')) t.checked ? F.fams.add(t.value) : F.fams.delete(t.value);
+  else if (t.matches('[data-brand]')) t.checked ? F.brands.add(t.value) : F.brands.delete(t.value);
+  else if (t.matches('[data-price]')) F.price = t.value;
+  else if (t.id === 'fStock') F.stock = t.checked;
+  renderShop();
+});
+$('#sortSelect').addEventListener('change', e => { F.sort = e.target.value; renderShop(); });
+$('#moreBtn').addEventListener('click', () => { shown += PAGE; renderShop(); });
+function renderShop(){
+  const list = filtered();
+  $('#grid').innerHTML = list.length ? list.slice(0, shown).map(card).join('')
+    : `<div class="empty"><b>Nothing matches yet</b>Try removing a filter, or <button data-clear>clear them all</button>.</div>`;
+  $('#resultCount').textContent = `${list.length} ${list.length === 1 ? 'fragrance' : 'fragrances'}`;
+  const ed = EDITS.find(e => e.key === F.edit);
+  $('#shopTitle').textContent = ed ? ed.title : F.gender !== 'all' ? `${F.gender === 'Unisex' ? 'Unisex' : 'For ' + (F.gender === 'Women' ? 'her' : 'him')}` : F.brands.size === 1 ? [...F.brands][0] : F.q ? `Results for “${F.q}”` : 'Shop all fragrances';
+  $('#showResults').textContent = `Show ${list.length} ${list.length === 1 ? 'result' : 'results'}`;
+  $('#moreBtn').hidden = shown >= list.length;
+  // sync controls
+  $$('#fGender button').forEach(b => b.classList.toggle('on', b.dataset.gender === F.gender));
+  $$('[data-fam]').forEach(c => c.checked = F.fams.has(c.value));
+  $$('[data-brand]').forEach(c => c.checked = F.brands.has(c.value));
+  $$('[data-price]').forEach(c => c.checked = c.value === F.price);
+  $('#fStock').checked = F.stock; $('#sortSelect').value = F.sort;
+  const chips = [];
+  if (F.gender !== 'all') chips.push(['gender', '', F.gender]);
+  F.fams.forEach(f => chips.push(['fam', f, f])); F.brands.forEach(b => chips.push(['brand', b, b]));
+  if (F.price !== 'any') chips.push(['price', '', PRICES.find(x => x[0] === F.price)[1]]);
+  if (F.edit) chips.push(['edit', '', EDITS.find(e => e.key === F.edit).title]);
+  if (F.q) chips.push(['q', '', '“' + F.q + '”']); if (F.stock) chips.push(['stock', '', 'In stock']);
+  $('#activeFilters').innerHTML = chips.map(([k, v, l]) => `<button class="chip" data-unset="${k}" data-val="${esc(v)}">${esc(l)}${xSvg}</button>`).join('') + (chips.length > 1 ? '<button class="chip clear" data-clear>Clear all</button>' : '');
+  const n = chips.length; $('#fCount').textContent = n; $('#fCount').hidden = !n;
+}
+function resetF(){ Object.assign(F, { gender:'all', price:'any', stock:false, q:'', edit:'' }); F.fams.clear(); F.brands.clear(); }
+function applyFilter(spec, scroll = true){
+  resetF(); shown = PAGE;
+  if (spec === 'deals') F.price = '0-30000';
+  else if (spec && spec !== 'all'){ const [k, ...rest] = spec.split(':'), v = rest.join(':');
+    if (k === 'gender') F.gender = v; else if (k === 'family') F.fams.add(v); else if (k === 'brand') F.brands.add(v); else if (k === 'edit') F.edit = v; }
+  renderShop(); closeAll(true);
+  if (scroll) $('#shop').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'});
+}
+renderShop();
+$('#filterBtn').addEventListener('click', () => { $('#filters').classList.add('on'); scrim.classList.add('on'); document.body.style.overflow = 'hidden'; });
+
+/* ---------- Overlays ---------- */
+const scrim = $('#scrim'); let lastFocus = null;
+function open(id){
+  closeAll(true); const el = $('#' + id); if (!el) return;
+  lastFocus = document.activeElement; el.classList.add('on'); el.setAttribute('aria-hidden', 'false');
+  scrim.classList.add('on'); document.body.style.overflow = 'hidden';
+  if (id === 'menu') $('#menuBtn').setAttribute('aria-expanded', 'true');
+  // focus the input if there is one, otherwise the panel (no stray focus ring on the close button)
+  setTimeout(() => { const inp = el.querySelector('input:not([type=file])'), target = inp || el.querySelector('.modal-card') || el;
+    if (!inp) target.setAttribute('tabindex', '-1'); target.focus({preventScroll:true}); }, 60);
+}
+function closeAll(silent){
+  stopCamera();
+  $$('.drawer.on, .modal.on, .filters.on').forEach(el => { el.classList.remove('on'); el.setAttribute('aria-hidden', 'true'); });
+  scrim.classList.remove('on'); document.body.style.overflow = ''; $('#menuBtn').setAttribute('aria-expanded', 'false');
+  if (!silent && lastFocus && document.contains(lastFocus)) lastFocus.focus({preventScroll:true});
+}
+scrim.addEventListener('click', () => closeAll());
+$$('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAll(); }));
+addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+$('#menuBtn').addEventListener('click', () => open('menu'));
+
+/* ---------- Product panel ---------- */
+function quickView(id){
+  const p = byId(id); if (!p) return;
+  const related = products.filter(x => x.id !== p.id && !x.soldOut && (x.family === p.family || x.brand === p.brand))
+    .sort((a, b) => (b.brand === p.brand) - (a.brand === p.brand) || Math.abs(a.price - p.price) - Math.abs(b.price - p.price)).slice(0, 4);
+  const details = [['Family', p.family], ['Concentration', p.concentration], ['Size', p.size], ['For', p.gender]].filter(d => d[1]);
+  $('#qvCard').innerHTML = `<button class="icon-btn modal-close" data-close aria-label="Close">${xSvg}</button>
+    <div class="pp-top"><div class="pp-media">${ph(p, true)}</div>
+    <div class="pp-info"><span class="card-brand">${esc(p.brand)}</span><h3>${esc(p.name)}</h3><span class="pp-price">${fmt(p.price)}${p.soldOut ? ' · <span class="card-meta">Sold out</span>' : ''}</span>
+      ${p.description ? `<p class="pp-desc">${esc(p.description)}</p>` : ''}
+      ${p.notes.length ? `<p class="pp-label">Notes</p><div class="pp-notes">${p.notes.map(n => `<button data-note="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
+      <dl class="pp-details">${details.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+      <div class="pp-buy"><button class="btn" data-add="${esc(p.id)}" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'Sold out' : 'Add to bag · ' + fmt(p.price)}</button>
+        <button class="wish ${wish.has(p.id) ? 'on' : ''}" data-wish="${esc(p.id)}" aria-label="Save" aria-pressed="${wish.has(p.id)}">${heartSvg}</button></div>
+    </div></div>
+    ${related.length ? `<div class="pp-more"><h4>You may also like</h4><div class="row">${related.map(card).join('')}</div></div>` : ''}`;
+  if ($('#quick').classList.contains('on')) $('#qvCard').scrollTop = 0; else open('quick');
+}
+
+/* ---------- Bag & saved ---------- */
+function bump(el){ el.hidden = false; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+function addToBag(id, btn){
+  const p = byId(id); if (!p || p.soldOut) return;
+  const it = bag.find(i => i.id === id); it ? it.qty++ : bag.push({ id, qty:1 });
+  store('velunora_bag', bag); renderBag(); bump($('#bagCount'));
+  if (btn && !btn.classList.contains('btn')){ const old = btn.innerHTML; btn.classList.add('done'); btn.innerHTML = btn.classList.contains('card-add-sm') ? checkSvg : 'Added';
+    setTimeout(() => { btn.classList.remove('done'); btn.innerHTML = old; }, 1300); }
   toast(`${p.name} added to your bag`);
 }
-function renderCart(){
-  const count = cart.reduce((a,c) => a + c.qty, 0);
-  $('#bagCount').textContent = count;
-  $('#subtotal').textContent = fmt(cart.reduce((a,c) => a + c.qty*c.price, 0));
-  $('#cartItems').innerHTML = cart.length ? cart.map(c => { const p = byId(c.id); return `
-    <div class="ci"><div class="ci-img">${photo(p, '70px')}</div>
-      <div><h4>${p.name}</h4><small>${c.size.replace('ml',' ml')}</small>
-        <div class="ci-q"><button data-dec="${c.key}" aria-label="Decrease">−</button><span>${c.qty}</span><button data-inc="${c.key}" aria-label="Increase">+</button></div></div>
-      <div class="ci-r">${fmt(c.price*c.qty)}<button class="rm" data-rm="${c.key}">Remove</button></div></div>`; }).join('')
-    : `<div class="cart-empty"><b>Your bag is empty</b>Add a fragrance from the collection to get started.</div>`;
-  $('#checkout').disabled = !cart.length; $('#checkout').style.opacity = cart.length ? 1 : .4;
+function renderBag(){
+  const count = bag.reduce((a, i) => a + i.qty, 0), total = bag.reduce((a, i) => a + i.qty * byId(i.id).price, 0);
+  $('#bagCount').textContent = count; $('#bagCount').hidden = !count; $('#tabBagDot').hidden = !count;
+  $('#bagItems').innerHTML = bag.length ? bag.map(i => { const p = byId(i.id); return `<div class="line-item">
+      <div data-qv="${esc(p.id)}">${ph(p)}</div>
+      <div><small>${esc(p.brand)}</small><b>${esc(p.name)}</b>
+        <div class="qty"><button data-dec="${esc(p.id)}" aria-label="Decrease">−</button><span>${i.qty}</span><button data-inc="${esc(p.id)}" aria-label="Increase">+</button></div></div>
+      <div class="li-right">${fmt(p.price * i.qty)}<button data-rm="${esc(p.id)}">Remove</button></div></div>`; }).join('')
+    : `<div class="drawer-empty"><b>Your bag is empty</b>Find something you love in the collection.<br><button class="btn" data-filter="all">Start shopping</button></div>`;
+  $('#bagFoot').hidden = !bag.length; $('#freeBar').hidden = !bag.length;
+  $('#subtotal').textContent = fmt(total);
+  const left = FREE_DELIVERY - total;
+  $('#freeText').innerHTML = left > 0 ? `You're <b>${fmt(left)}</b> away from free delivery` : 'You qualify for <b>free delivery</b>';
+  $('#freeFill').style.width = Math.min(100, total / FREE_DELIVERY * 100) + '%';
+  const msg = 'Hello Velunora, I would like to order:\n' + bag.map(i => { const p = byId(i.id); return `• ${i.qty} × ${p.brand} ${p.name} (${fmt(p.price)})`; }).join('\n') + `\nSubtotal: ${fmt(total)}`;
+  $('#waOrder').href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
 }
-renderCart();
-const openDrawer = on => { $('#drawer').classList.toggle('on', on); $('#overlay').classList.toggle('on', on); };
-$('#bagBtn').onclick = () => openDrawer(true);
-$('#closeDrawer').onclick = $('#overlay').onclick = () => openDrawer(false);
-$('#checkout').onclick = () => { openDrawer(false); toast('Checkout is not connected yet'); };
-addEventListener('keydown', e => { if (e.key === 'Escape'){ openDrawer(false); $('#chat').classList.remove('on'); } });
+function toggleWish(id){
+  wish.has(id) ? wish.delete(id) : wish.add(id); store('velunora_wish', [...wish]);
+  $$(`[data-wish="${CSS.escape(id)}"]`).forEach(b => { b.classList.toggle('on', wish.has(id)); b.setAttribute('aria-pressed', wish.has(id)); });
+  renderWish(); if (wish.size) bump($('#wishCount'));
+  toast(wish.has(id) ? 'Saved for later' : 'Removed from saved');
+}
+function renderWish(){
+  $('#wishCount').textContent = wish.size; $('#wishCount').hidden = !wish.size;
+  $('#wishItems').innerHTML = wish.size ? [...wish].map(id => { const p = byId(id); return `<div class="line-item">
+      <div data-qv="${esc(p.id)}">${ph(p)}</div>
+      <div><small>${esc(p.brand)}</small><b>${esc(p.name)}</b><small>${fmt(p.price)}</small><br>
+        <button class="li-add" data-add="${esc(p.id)}" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'Sold out' : 'Add to bag'}</button></div>
+      <div class="li-right"><span></span><button data-wish="${esc(p.id)}">Remove</button></div></div>`; }).join('')
+    : `<div class="drawer-empty"><b>Nothing saved yet</b>Tap the heart on any fragrance to keep it here.<br><button class="btn" data-filter="all">Browse fragrances</button></div>`;
+}
+renderBag(); renderWish();
+$('#checkoutBtn').addEventListener('click', () => toast('Online checkout is coming soon. Order on WhatsApp for now.'));
 
+/* ---------- Search ---------- */
+let si = $('#searchInput'), sr = $('#searchResults');
+const sItem = p => `<button class="s-item" data-qv="${esc(p.id)}">${ph(p)}<span><b>${esc(p.brand)} ${esc(p.name)}</b><small>${esc(p.family || '')} · ${esc(p.size)}</small></span><span class="p">${fmt(p.price)}</span></button>`;
+function renderSearch(input = si, box = sr){
+  const q = input.value.trim(), list = q ? products.filter(p => matches(p, q)).slice(0, 8) : [];
+  box.innerHTML = !q ? `<p class="s-empty">Popular searches</p><div class="s-chips">${['Oud','Vanilla','Lattafa','Armaf','Amber','Rose'].map(t => `<button data-s="${t}">${t}</button>`).join('')}</div>`
+    : list.length ? list.map(sItem).join('') + `<button class="s-item" data-search-all style="grid-template-columns:1fr"><b>See all results for “${esc(q)}”</b></button>`
+    : `<p class="s-empty">No matches for “${esc(q)}”. Try a brand, a note like “vanilla”, or search by photo.</p>`;
+}
+si.addEventListener('input', () => renderSearch());
+const hs = $('#hsInput'), hd = $('#hsDrop');
+hs.addEventListener('input', () => { renderSearch(hs, hd); hd.classList.add('on'); });
+hs.addEventListener('focus', () => { renderSearch(hs, hd); hd.classList.add('on'); });
+hs.addEventListener('keydown', e => {
+  const items = $('.s-item', hd); let n = items.findIndex(x => x.classList.contains('hl'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); items[n] && items[n].classList.remove('hl'); n = (n + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; items[n] && items[n].classList.add('hl'); }
+  if (e.key === 'Enter'){ e.preventDefault(); const it = items[n]; if (it) it.click(); else { hd.classList.remove('on'); searchAll(hs.value); } }
+  if (e.key === 'Escape'){ hd.classList.remove('on'); hs.blur(); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.hsearch')) hd.classList.remove('on'); });
+si.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); searchAll(si.value); } });
+function searchAll(q){ applyFilter('all', false); F.q = q.trim(); renderShop(); $('#shop').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'}); }
+
+/* ---------- Scent finder ---------- */
+const QUIZ = [
+  { k:'gender', q:'Who is it for?', o:[['Women','For her'],['Men','For him'],['Unisex','For anyone'],['all','Surprise me']] },
+  { k:'vibe', q:'Which mood speaks to you?', o:[['warm','Warm & sweet','Amber, vanilla, gourmand'],['woody','Woody & oud','Cedar, oud, leather'],['floral','Floral & fruity','Rose, jasmine, berries'],['fresh','Fresh & citrus','Zesty, green, airy']] },
+  { k:'budget', q:'What is your budget?', o:[['30000','Under ₦30,000'],['70000','₦30,000 – ₦70,000'],['200000','₦70,000 – ₦200,000'],['any','No limit']] },
+  { k:'when', q:'When will you wear it most?', o:[['day','Everyday','Office, errands, school'],['night','Evenings','Dinners and nights out'],['special','Special occasions','Weddings, events'],['all','All the time']] }
+];
+const VIBES = { warm:['Amber','Gourmand','Oriental'], woody:['Woody','Oud','Leather'], floral:['Floral','Fruity'], fresh:['Citrus','Aromatic','Fresh'] };
+let quiz = {}, qStep = 0;
+function renderFinder(){
+  const c = $('#finderCard'), close = `<button class="icon-btn modal-close" data-close aria-label="Close">${xSvg}</button>`;
+  const prog = `<div class="f-progress">${QUIZ.map((_, i) => `<i class="${i <= qStep ? 'on' : ''}"></i>`).join('')}</div>`;
+  if (qStep < QUIZ.length){
+    const s = QUIZ[qStep];
+    c.innerHTML = close + prog + `<div class="f-step"><p class="eyebrow">Question ${qStep + 1} of ${QUIZ.length}</p><h3>${s.q}</h3>
+      <div class="f-opts">${s.o.map(([v, l, d]) => `<button data-answer="${v}">${l}${d ? `<small>${d}</small>` : ''}</button>`).join('')}</div>
+      ${qStep ? '<button class="f-back" data-back>Back</button>' : ''}</div>`;
+  } else {
+    const fams = VIBES[quiz.vibe] || [], max = quiz.budget === 'any' ? Infinity : +quiz.budget, min = { '30000':0, '70000':30000, '200000':70000 }[quiz.budget] || 0;
+    const scored = products.filter(p => !p.soldOut).map(p => {
+      let s = 0; if (fams.includes(p.family)) s += 3;
+      if (quiz.gender === 'all' || p.gender === quiz.gender) s += 2; else if (p.gender === 'Unisex') s += 1; else s -= 3;
+      if (p.price <= max && p.price >= min) s += 2; else if (p.price <= max) s += 1; else s -= 2;
+      const strong = /Extrait|Parfum/.test(p.concentration || '');
+      if ((quiz.when === 'night' || quiz.when === 'special') && strong) s += 1;
+      if (quiz.when === 'day' && /Toilette|Cologne/.test(p.concentration || '')) s += 1;
+      return { p, s }; }).sort((a, b) => b.s - a.s || a.p.price - b.p.price).slice(0, 4);
+    c.innerHTML = close + prog + `<div class="f-step"><p class="eyebrow">Your matches</p><h3>We think you’ll love these</h3>
+      <div class="f-results">${scored.map(({p}) => sItem(p)).join('')}</div>
+      <div class="f-actions"><button class="btn btn-line" data-restart>Start again</button><button class="btn" data-finder-shop>Shop ${esc((fams[0] || 'all').toLowerCase())} scents</button></div></div>`;
+  }
+}
+function startFinder(gender){ quiz = {}; qStep = 0; if (gender){ quiz.gender = gender; qStep = 1; } renderFinder(); open('finder'); }
+
+/* ---------- Search by photo ----------
+   Reads the bottle label in the browser (Tesseract.js, loaded on first use) and matches it to the catalogue. */
+const camSvg = '<svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const lens = { stream:null, worker:null, loading:null, phase:'idle' }; // phase: camera | reading | result
+const lensClose = `<button class="icon-btn modal-close" data-close aria-label="Close">${xSvg}</button>`;
+const lensHead = '<p class="eyebrow">Search by photo</p><h3>Find a perfume by its bottle</h3><p class="lens-hint">Point at the bottle and we’ll read the label.</p>';
+function stopCamera(){ if (lens.stream){ lens.stream.getTracks().forEach(t => t.stop()); lens.stream = null; } }
+async function openLens(){
+  open('lens'); lens.phase = 'camera'; const c = $('#lensCard');
+  const canCam = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && window.isSecureContext;
+  c.innerHTML = lensClose + lensHead + `<div class="lens-view">${canCam ? '<video playsinline muted autoplay></video><div class="lens-corners"><i></i><i></i><i></i><i></i></div><span class="lens-status">Starting camera…</span>' : ''}</div>
+    <div class="lens-actions"><button class="link" data-lens-upload>Upload a photo</button>${canCam ? '<button class="shutter" data-lens-shoot aria-label="Take photo"></button>' : '<span></span>'}<span></span></div>`;
+  if (!canCam) return lensNoCamera();
+  try {
+    lens.stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1440 } }, audio:false });
+    if (!$('#lens').classList.contains('on') || lens.phase !== 'camera') return stopCamera();
+    const v = $('#lensCard video'); v.srcObject = lens.stream; await v.play().catch(() => {});
+    const st = $('#lensCard .lens-status'); st && st.remove();
+  } catch(e){ if (lens.phase === 'camera') lensNoCamera(); }
+  preloadReader();
+}
+function lensNoCamera(){
+  const view = $('#lensCard .lens-view'); if (!view) return;
+  view.innerHTML = `<div class="lens-empty">${camSvg}<span>Take a clear photo of the label,<br>then we’ll find the perfume.</span><button class="btn" data-lens-upload>Take or upload a photo</button></div>`;
+  const sh = $('#lensCard [data-lens-shoot]'); sh && sh.replaceWith(document.createElement('span'));
+  preloadReader();
+}
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+function preloadReader(){
+  if (!lens.loading) lens.loading = (window.Tesseract ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'))
+    .then(() => Tesseract.createWorker('eng')).then(w => (lens.worker = w)).catch(e => { lens.loading = null; throw e; });
+  return lens.loading;
+}
+// enlarged, greyscale, high-contrast copy: reads stylised labels noticeably better
+function enhanced(src){
+  const s = Math.min(2, 1800 / Math.max(src.width, src.height)), c = document.createElement('canvas');
+  c.width = Math.round(src.width * s); c.height = Math.round(src.height * s);
+  const x = c.getContext('2d'); x.drawImage(src, 0, 0, c.width, c.height);
+  const d = x.getImageData(0, 0, c.width, c.height), px = d.data; let lo = 255, hi = 0;
+  for (let i = 0; i < px.length; i += 4){ const g = px[i] * .299 + px[i+1] * .587 + px[i+2] * .114; px[i] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+  const k = 255 / Math.max(1, hi - lo);
+  for (let i = 0; i < px.length; i += 4){ let g = (px[i] - lo) * k; g = (g - 128) * 1.35 + 128; px[i] = px[i+1] = px[i+2] = Math.max(0, Math.min(255, g)); }
+  x.putImageData(d, 0, 0); return c;
+}
+async function lensRead(canvas){
+  lens.phase = 'reading'; stopCamera();
+  const view = $('#lensCard .lens-view'), url = canvas.toDataURL('image/jpeg', .9);
+  view.innerHTML = `<img src="${url}" alt="Your photo"><div class="lens-scan"></div><span class="lens-status">${lens.worker ? 'Reading the label…' : 'Getting ready…'}</span>`;
+  $('#lensCard .lens-actions').innerHTML = '';
+  let text = '';
+  try {
+    await preloadReader();
+    const st = $('#lensCard .lens-status'); if (st) st.textContent = 'Reading the label…';
+    const a = await lens.worker.recognize(canvas); text = a.data.text;
+    let res = lensMatch(text, products);
+    if (!res[0] || res[0].score < 5){ const b = await lens.worker.recognize(enhanced(canvas)); text += ' ' + b.data.text; res = lensMatch(text, products); }
+    lensResult(res, text);
+  } catch(e){
+    if (!$('#lens').classList.contains('on')) return;
+    lensResult([], '', true);
+  }
+}
+function lensResult(res, text, failed){
+  if (!$('#lens').classList.contains('on') || lens.phase !== 'reading') return;
+  lens.phase = 'result';
+  const c = $('#lensCard'), top = res[0], sure = top && (top.score >= 5 || top.exact);
+  const words = lensTokens(text).filter(w => w.length >= 4).slice(0, 4).join(' ');
+  if (sure){
+    const p = top.p, alts = res.slice(1, 3).filter(r => r.score >= 4 && r.score >= top.score * .6);
+    c.innerHTML = lensClose + `<p class="eyebrow">Search by photo</p><h3>We found it</h3>
+      <div class="lens-note">${checkSvg}${top.exact ? 'Matched exactly to the label in your photo.' : 'Matched to the label in your photo.'}</div>
+      <div class="lens-found">${ph(p)}<div><span class="card-brand">${esc(p.brand)}</span><b>${esc(p.name)}</b><span class="price">${fmt(p.price)}</span>${p.soldOut ? ' <span class="card-meta">· Sold out</span>' : ''}</div></div>
+      <div class="lens-btns"><button class="btn btn-line" data-qv="${esc(p.id)}">View this perfume</button><button class="btn" data-add="${esc(p.id)}" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'Sold out' : 'Add to bag'}</button></div>
+      ${alts.length ? `<div class="lens-alt"><p class="eyebrow">Not quite? Other close matches</p>${alts.map(({p}) => sItem(p)).join('')}</div>` : ''}
+      <div class="lens-actions"><button class="link" data-lens>Scan another</button><span></span><span></span></div>`;
+    return;
+  }
+  const maybe = res.slice(0, 3);
+  c.innerHTML = lensClose + `<p class="eyebrow">Search by photo</p><h3>${failed ? 'The reader could not load' : maybe.length ? 'Is it one of these?' : 'We couldn’t read that label'}</h3>
+    ${failed ? '<p class="lens-hint">Check your internet connection and try again.</p>' : maybe.length
+      ? `<div class="lens-alt" style="margin-top:8px">${maybe.map(({p}) => sItem(p)).join('')}</div>`
+      : `<p class="lens-hint" style="margin:0">For the best result:</p><ul class="lens-tips"><li>Fill the frame with the front label</li><li>Hold steady in good light, without glare</li><li>Keep the text upright</li></ul>`}
+    ${words ? `<div class="lens-read">We read: “${esc(words)}”</div>` : ''}
+    <div class="lens-btns"><button class="btn btn-line" data-lens>Try again</button>${words ? `<button class="btn" data-lens-search="${esc(words)}">Search “${esc(words.split(' ').slice(0, 2).join(' '))}”</button>` : '<button class="btn" data-open="search">Search by name</button>'}</div>`;
+}
+function lensShoot(){
+  const v = $('#lensCard video'); if (!v || !v.videoWidth) return;
+  const c = document.createElement('canvas'), s = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight));
+  c.width = Math.round(v.videoWidth * s); c.height = Math.round(v.videoHeight * s); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+  lensRead(c);
+}
+$('#lensFile').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (!$('#lens').classList.contains('on')){ open('lens'); $('#lensCard').innerHTML = lensClose + lensHead + '<div class="lens-view"></div><div class="lens-actions"></div>'; }
+  const img = new Image(); img.onload = () => {
+    const c = document.createElement('canvas'), s = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(img.src); lensRead(c);
+  };
+  img.src = URL.createObjectURL(f);
+});
+
+/* ---------- Global click handling ---------- */
 document.addEventListener('click', e => {
-  const a = e.target.closest('[data-add]'); if (a) return addToCart(a.dataset.add);
-  const w = e.target.closest('[data-wish]');
-  if (w){ const id = w.dataset.wish; wished.has(id) ? wished.delete(id) : wished.add(id);
-    $$(`[data-wish="${id}"]`).forEach(x => x.classList.toggle('on', wished.has(id)));
-    return toast(wished.has(id) ? `${byId(id).name} saved to your wishlist` : `${byId(id).name} removed from your wishlist`); }
-  const inc = e.target.closest('[data-inc]'), dec = e.target.closest('[data-dec]'), rm = e.target.closest('[data-rm]');
-  if (inc || dec || rm){ const key = (inc||dec||rm).dataset[inc?'inc':dec?'dec':'rm']; const it = cart.find(c => c.key === key);
-    if (inc) it.qty++; if (dec) it.qty--; if (rm || it.qty < 1) cart = cart.filter(c => c.key !== key); save(); renderCart(); }
+  const t = e.target.closest('button, a, [data-qv]'); if (!t) return;
+  const d = t.dataset;
+  if (d.close !== undefined || d.closeFilters !== undefined) return closeAll();
+  if (d.lens !== undefined){ e.preventDefault(); return openLens(); }
+  if (d.lensShoot !== undefined) return lensShoot();
+  if (d.lensUpload !== undefined) return $('#lensFile').click();
+  if (d.lensSearch){ closeAll(true); return searchAll(d.lensSearch); }
+    if (d.open){ e.preventDefault(); if (d.open === 'search'){ open('search'); return renderSearch(); } return d.open === 'finder' ? startFinder() : open(d.open); }
+  if (d.wish){ e.preventDefault(); e.stopPropagation(); return toggleWish(d.wish); }
+  if (d.add){ e.preventDefault(); return addToBag(d.add, t); }
+  if (d.qv){ e.preventDefault(); hd.classList.remove('on'); return quickView(d.qv); }
+  if (d.filter){ e.preventDefault(); return applyFilter(d.filter); }
+  if (d.gender){ F.gender = d.gender; shown = PAGE; return renderShop(); }
+  if (d.unset){ const k = d.unset, v = d.val;
+    if (k === 'gender') F.gender = 'all'; else if (k === 'fam') F.fams.delete(v); else if (k === 'brand') F.brands.delete(v);
+    else if (k === 'price') F.price = 'any'; else if (k === 'edit') F.edit = ''; else if (k === 'q') F.q = ''; else if (k === 'stock') F.stock = false;
+    shown = PAGE; return renderShop(); }
+  if (d.clear !== undefined){ resetF(); shown = PAGE; return renderShop(); }
+  if (d.note){ closeAll(true); applyFilter('all', false); F.q = d.note; renderShop(); return $('#shop').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'}); }
+  if (d.s){ const inHead = !!t.closest('.hsearch'), inp = inHead ? hs : si; inp.value = d.s; inp.focus(); return inHead ? renderSearch(hs, hd) : renderSearch(); }
+  if (d.searchAll !== undefined){ const v = t.closest('.hsearch') ? hs.value : si.value; hd.classList.remove('on'); closeAll(true); return searchAll(v); }
+  if (d.inc || d.dec || d.rm){ const id = d.inc || d.dec || d.rm, it = bag.find(i => i.id === id); if (!it) return;
+    if (d.inc) it.qty++; if (d.dec) it.qty--; if (d.rm || it.qty < 1) bag = bag.filter(i => i.id !== id);
+    store('velunora_bag', bag); return renderBag(); }
+  if (d.answer){ quiz[QUIZ[qStep].k] = d.answer; qStep++; return renderFinder(); }
+  if (d.back !== undefined){ qStep = Math.max(0, qStep - 1); return renderFinder(); }
+  if (d.restart !== undefined){ quiz = {}; qStep = 0; return renderFinder(); }
+  if (d.finderShop !== undefined){ const fam = (VIBES[quiz.vibe] || [])[0], g = quiz.gender; applyFilter(fam ? 'family:' + fam : 'all'); if (g && g !== 'all'){ F.gender = g; renderShop(); } return; }
 });
 
 /* ---------- Toast ---------- */
 let tt; function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2400); }
 
-/* ---------- Reveal, split headings, counters ---------- */
-$$('.split-h').forEach(h => { h.innerHTML = [...h.textContent].map((c,i) => c === ' ' ? ' ' : `<span class="ch" style="--i:${i}">${c}</span>`).join(''); });
-const io = new IntersectionObserver(entries => entries.forEach(en => {
-  if (!en.isIntersecting) return;
-  const el = en.target; el.classList.add('in'); io.unobserve(el);
-  if (el.id === 'noteList') renderNotes('top');
-  el.querySelectorAll('[data-count]').forEach(countUp);
-}), {threshold:.15, rootMargin:'0px 0px -40px 0px'});
-$$('.reveal, .split-h, #noteList').forEach(el => io.observe(el));
-function countUp(el){ const end = +el.dataset.count, pre = el.dataset.prefix || '', suf = el.dataset.suffix || '', t0 = performance.now(), dur = 1800;
-  (function f(now){ const k = Math.min((now-t0)/dur, 1), e = 1 - Math.pow(1-k, 4); el.textContent = pre + Math.round(end*e) + suf; if (k < 1) requestAnimationFrame(f); })(t0); }
-
 /* ---------- Newsletter ---------- */
-$('#newsForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); $('#newsOk').textContent = 'Subscribed. Your first letter arrives next month.'; });
+$('#newsForm').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); $('#newsOk').textContent = "You're on the list. Watch your inbox for new scents and deals."; });
 
-/* ---------- Chat ---------- */
-const replies = {
-  'Help me choose a scent':'Do you prefer warm and smoky, or fresh and floral? Warm lovers usually start with Ambre Noir; floral lovers with Rose Velours.',
-  'Delivery times':'Lagos orders arrive in 1 to 2 working days. Other states take 3 to 5 working days.',
-  'Gift wrapping':'Every order comes gift-wrapped in our velvet box at no extra cost. You can add a handwritten note at checkout.'
-};
-$('#chatBtn').onclick = () => $('#chat').classList.toggle('on');
-$('#quick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
-  const body = $('#chatBody'); body.insertAdjacentHTML('beforeend', `<div class="msg me">${b.textContent}</div>`); body.scrollTop = body.scrollHeight;
-  setTimeout(() => { body.insertAdjacentHTML('beforeend', `<div class="msg bot">${replies[b.textContent]}</div>`); body.scrollTop = body.scrollHeight; }, 650); });
+/* ---------- Reveal on scroll ---------- */
+const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } }), { rootMargin:'0px 0px -6% 0px' });
+$$('.reveal').forEach(el => io.observe(el));
+
+/* ---------- Tab bar state ---------- */
+const tabs = $$('.tabbar a');
+addEventListener('scroll', () => { const inShop = $('#shop').getBoundingClientRect().top < innerHeight * .5 && $('#brands').getBoundingClientRect().top > innerHeight * .5;
+  tabs[0].classList.toggle('on', !inShop); tabs[1].classList.toggle('on', inShop); }, {passive:true});
 })();
